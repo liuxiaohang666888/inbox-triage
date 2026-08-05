@@ -8,7 +8,8 @@ InboxTriage —— 完整网页应用（可公网部署版）
   - 全程只读（readonly=True），物理上不可能发信/删信
 
 部署（见 怎么上线.md）：
-  - 环境变量：PROVIDER(zhipu|gemini|deepseek) / ZHIPU_API_KEY / GEMINI_API_KEY / DEEPSEEK_API_KEY / PAYMENT_URL
+  - 环境变量：PROVIDER(zhipu|gemini|deepseek) / ZHIPU_API_KEY / GEMINI_API_KEY / DEEPSEEK_API_KEY
+  - PayPal 订阅按钮已内嵌（client-id / plan-id 写死在代码里，可公开）
   - 启动命令：gunicorn --bind 0.0.0.0:$PORT app:app
   - 依赖见 requirements.txt
 """
@@ -64,12 +65,28 @@ def run_triage(gmail, pwd, days, owner_ctx):
 
 
 # ---------------------------------------------------------------- 首页
-PAYMENT_BLOCK = (
-    f'<a class="sub-btn" href="{PAYMENT_URL}" target="_blank" rel="noopener">'
-    f'Subscribe — $12/mo</a>'
-    if PAYMENT_URL else
-    '<span class="sub-note">Subscriptions open soon — join the waitlist above.</span>'
-)
+# PayPal 订阅按钮（client-id / plan-id 均为公开值，可直接写进代码）
+PAYPAL_CLIENT_ID = "BAAxyItsTaXijHpq8NBvrle3h6xOpEJ9vc1nl_OvLlwnfe_OoFH8Uz3tGTs9x-p-nI88xGGROfurcvVyig"
+PAYPAL_PLAN_ID = "P-27Y71376MG851694YNJZU6RY"
+
+if PAYPAL_PLAN_ID:
+    PAYMENT_BLOCK = (
+        '<div style="max-width:260px;margin:0 auto"><div id="paypal-sub"></div></div>'
+        '<script src="https://www.paypal.com/sdk/js?client-id=' + PAYPAL_CLIENT_ID
+        + '&vault=true&intent=subscription"></script>'
+        '<script>paypal.Buttons({style:{shape:"rect",color:"gold",layout:"vertical",label:"subscribe"},'
+        'createSubscription:function(data,actions){return actions.subscription.create({plan_id:"'
+        + PAYPAL_PLAN_ID
+        + '"})},onApprove:function(data,actions){alert("Thanks! Your subscription ID: "+data.subscriptionID)}})'
+        '.render("#paypal-sub");</script>'
+    )
+elif PAYMENT_URL:
+    PAYMENT_BLOCK = (
+        f'<a class="sub-btn" href="{PAYMENT_URL}" target="_blank" rel="noopener">'
+        f'Subscribe — $12/mo</a>'
+    )
+else:
+    PAYMENT_BLOCK = '<span class="sub-note">Subscriptions open soon — join the waitlist above.</span>'
 
 INDEX = """<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8">
