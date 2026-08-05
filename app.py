@@ -38,7 +38,7 @@ else:
 
 GUIDE_LINK = "https://99b4fd12751a4bda9250171ec55201d6.gz5.agentos-app.net"
 PAYMENT_URL = os.environ.get("PAYMENT_URL", "")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "inboxadmin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "54188yyds")
 
 # ---------------- 试用/订阅网关（按 Gmail 身份，非 IP）--------
 def _gate_html(title, msg, sub_text=None):
