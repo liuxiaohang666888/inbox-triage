@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InboxTriage — AI Email Triage for Solo Sellers</title>
+<meta name="description" content="Connect your Gmail. Get every email sorted into Spam / Customer / Lead / High-risk. Reply drafts included. Tasks extracted. $12/month.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#0d1117;--muted:#8b949e;--line:#30363d;--bg:#010409;--soft:#161b22;--acc:#1f6feb;--warn:#f85149;--ok:#3fb950;--card:#0d1117}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;color:#c9d1d9;background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 24px}
+
+/* ---- 导航 ---- */
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid var(--line)}
+.logo{font-weight:800;font-size:19px;color:#fff;letter-spacing:-.02em}
+.logo span{color:var(--acc)}
+.nav-right{display:flex;gap:12px;align-items:center}
+.nav-right a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:6px 14px;border-radius:8px;transition:.15s}
+.nav-right a:hover{color:#fff;background:var(--soft)}
+.btn-sm{background:var(--acc)!important;color:#fff!important;font-weight:600!important;padding:8px 18px!important}
+
+/* ---- Hero ---- */
+.hero{padding:90px 0 70px;text-align:center}
+.pill{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--acc);background:rgba(31,111,235,.12);padding:7px 16px;border-radius:99px;margin-bottom:24px;border:1px solid rgba(31,111,235,.25)}
+h1{font-size:clamp(30px,5vw,52px);color:#fff;line-height:1.08;letter-spacing:-.03em;font-weight:800;max-width:780px;margin:0 auto}
+.sub{margin:22px auto 0;max-width:580px;font-size:17px;color:var(--muted);line-height:1.65}
+.cta-row{display:flex;gap:14px;justify-content:center;margin:36px 0 0;flex-wrap:wrap}
+.cta{display:inline-flex;align-items:center;gap:8px;padding:15px 28px;border-radius:11px;font-size:16px;font-weight:700;text-decoration:none;transition:.15s;cursor:pointer;border:none;font-family:inherit}
+.cta-primary{background:var(--acc);color:#fff}.cta-primary:hover{background:#1858c4}
+.cta-ghost{background:transparent;color:#c9d1d9;border:1px solid var(--line)}.cta-ghost:hover{border-color:var(--muted);color:#fff}
+.trust{margin-top:20px;font-size:13px;color:var(--muted)}
+
+/* ---- 工作原理 ---- */
+.how{padding:70px 0;border-top:1px solid var(--line)}
+.section-label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--acc);margin-bottom:10px}
+h2{font-size:30px;color:#fff;letter-spacing:-.02em;margin-bottom:12px;font-weight:800}
+.lead{color:var(--muted);font-size:16px;margin-bottom:44px;max-width:600px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+.step{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:28px 24px}
+.step-num{font-size:32px;font-weight:900;color:var(--acc);opacity:.6;line-height:1}
+.step h3{font-size:17px;color:#fff;margin:10px 0 8px;font-weight:700}
+.step p{font-size:14px;color:var(--muted);line-height:1.6}
+
+/* ---- 实时演示 ---- */
+.live{padding:70px 0;border-top:1px solid var(--line)}
+.demo-frame{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}
+.demo-bar{display:flex;align-items:center;gap:8px;padding:12px 18px;background:var(--soft);border-bottom:1px solid var(--line)}
+.dot{width:10px;height:10px;border-radius:50%}
+.d1{background:#f85149}.d2{background:#d29922}.d3{background:#3fb950}
+.demo-url{flex:1;font-size:12.5px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-left:8px}
+.demo-body{padding:0;min-height:400px}
+.demo-body iframe{width:100%;height:520px;border:0;display:block}
+
+/* ---- 分类说明 ---- */
+.cats{padding:70px 0;border-top:1px solid var(--line)}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.cat-card{border:1px solid var(--line);border-radius:12px;padding:24px 20px;background:var(--soft);transition:.2s}
+.cat-card:hover{border-color:var(--muted)}
+.cat-tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.05em;padding:4px 10px;border-radius:6px;margin-bottom:12px}
+.t-spam{background:rgba(139,148,158,.15);color:var(--muted)}
+.t-cust{background:rgba(63,185,80,.12);color:var(--ok)}
+.t-lead{background:rgba(31,111,235,.12);color:var(--acc)}
+.t-risk{background:rgba(248,81,73,.12);color:var(--warn)}
+.cat-card h3{font-size:16px;color:#fff;margin-bottom:6px;font-weight:700}
+.cat-card p{font-size:14px;color:var(--muted);line-height:1.55}
+
+/* ---- 不做什么 ---- */
+.bounds{padding:70px 0;border-top:1px solid var(--line)}
+.bound-list{list-style:none;max-width:620px}
+.bound-list li{padding:12px 0;border-bottom:1px solid var(--line);font-size:15px;color:var(--muted);display:flex;gap:14px;align-items:flex-start}
+.bound-list li b{color:#f85149;white-space:nowrap;font-size:18px;line-height:1}
+
+/* ---- 定价 ---- */
+.price-section{padding:70px 0;border-top:1px solid var(--line);text-align:center}
+.price-card{border:1px solid var(--acc);border-radius:18px;padding:48px 32px;max-width:420px;margin:0 auto;background:var(--soft);position:relative}
+.price-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;font-size:12px;font-weight:700;padding:4px 16px;border-radius:99px}
+.amt{font-size:52px;font-weight:900;color:#fff;letter-spacing:-.03em}
+.amt small{font-size:18px;font-weight:500;color:var(--muted)}
+.price-features{text-align:left;margin:28px 0 32px;padding:0;list-style:none}
+.price-features li{padding:9px 0;font-size:15px;color:#c9d1d9;display:flex;gap:10px;align-items:center}
+.price-features li::before{content:"✓";color:var(--ok);font-weight:800;font-size:18px}
+.price-cta{display:block;width:100%;padding:16px;border-radius:11px;background:var(--acc);color:#fff;font-size:17px;font-weight:700;text-decoration:none;text-align:center;transition:.15s}
+.price-cta:hover{background:#1858c4}
+.price-note{margin-top:16px;font-size:13px;color:var(--muted)}
+
+/* ---- CTA 底部 ---- */
+.final-cta{padding:80px 0 60px;border-top:1px solid var(--line);text-align:center}
+.final-cta h2{font-size:32px;margin-bottom:14px}
+.final-cta .sub{font-size:17px}
+
+/* ---- Footer ---- */
+footer{padding:36px 0;border-top:1px solid var(--line);text-align:center;font-size:13px;color:var(--muted)}
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:#fff}
+
+@media(max-width:640px){
+  .hero{padding:56px 0 46px}
+  h1{font-size:28px}
+  .how,.live,.cats,.bounds,.price-section,.final-cta{padding:48px 0}
+  .step{padding:22px 18px}
+  .price-card{padding:34px 22px}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== NAV ====== -->
+<nav class="wrap">
+  <div class="logo">Inbox<span>Triage</span></div>
+  <div class="nav-right">
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a class="btn-sm" href="https://tally.so/r/Y5X6d6">Get started</a>
+  </div>
+</nav>
+
+<!-- ====== HERO ====== -->
+<div class="wrap">
+  <div class="hero">
+    <div class="pill">For solo sellers &amp; freelancers</div>
+    <h1>Your inbox sorted. Replies drafted. Deadlines caught.</h1>
+    <p class="sub">Connect your Gmail once. Every morning InboxTriage reads your new emails, sorts them into four buckets, writes reply drafts you can send in one edit, and pulls out every deadline buried in your inbox.</p>
+    <div class="cta-row">
+      <a class="cta cta-primary" href="https://tally.so/r/Y5X6d6">Start free trial →</a>
+      <a class="cta cta-ghost" href="#live">See it in action</a>
+    </div>
+    <p class="trust">Read-only access · We never send email on your behalf · Cancel anytime</p>
+  </div>
+</div>
+
+<!-- ====== HOW IT WORKS ====== -->
+<section class="how"><div class="wrap">
+  <div class="section-label">How it works</div>
+  <h2>Three steps, done while you sleep.</h2>
+  <p class="lead">No plugins. No browser extensions. Just connect your Gmail and let it run.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h3>Connect Gmail</h3>
+      <p>Paste your Gmail address and a 16-char app password (generated from your Google account, revokable anytime). We connect via IMAP read-only — we physically cannot send or delete anything.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h3>AI triages everything</h3>
+      <p>Each email gets sorted: Customer inquiry, Sales lead, High-risk item, or Spam/Promo. Customers get a reply draft ready to copy-paste-edit-send. Deadlines get pulled into a task list.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h3>You review and act</h3>
+      <p>Open your daily report. Handle the 2–3 emails that matter. Ignore the 27 that don't. Copy a draft, tweak one line, hit send. Done in under 5 minutes.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ====== LIVE DEMO ====== -->
+<section class="live" id="live"><div class="wrap">
+  <div class="section-label">Live preview</div>
+  <h2>This is what your inbox looks like after InboxTriage runs.</h2>
+  <p class="lead">Real output from real emails. Not a mockup — this is the actual report format.</p>
+  <div class="demo-frame">
+    <div class="demo-bar">
+      <div class="dot d1"></div><div class="dot d2"></div><div class="dot d3"></div>
+      <div class="demo-url">inboxtriage.app/report — Aug 04, 2026</div>
+    </div>
+    <div class="demo-body">
+      <!-- 内嵌 demo 报告 -->
+      <iframe src="https://e7a1e4068252454281dbdf7a38670e99.bj2.agentos-app.net" title="InboxTriage sample report" loading="lazy"></iframe>
+    </div>
+  </div>
+</div></section>
+
+<!-- ====== FOUR BUCKETS ====== -->
+<section class="cats"><div class="wrap">
+  <div class="section-label">Four buckets</div>
+  <h2>Every email lands in exactly one place.</h2>
+  <p class="lead">You open the two that matter. The rest is already handled.</p>
+  <div class="cat-grid">
+    <div class="cat-card">
+      <span class="cat-tag t-risk">HIGH RISK</span>
+      <h3>Read this yourself</h3>
+      <p>Chargebacks, disputes, legal language, account warnings. Flagged red. No auto-drafts. Your call, always.</p>
+    </div>
+    <div class="cat-card">
+      <span class="cat-tag t-cust">CUSTOMER</span>
+      <h3>Someone is waiting</h3>
+      <p>Order questions, shipping, sizing, returns. Each comes with a reply draft attached — copy, edit, send.</p>
+    </div>
+    <div class="cat-card">
+      <span class="cat-tag t-lead">LEAD</span>
+      <h3>Money on the table</h3>
+      <p>Wholesale requests, collabs, custom quotes. Surfaced first so you answer while they're still warm.</p>
+    </div>
+    <div class="cat-card">
+      <span class="cat-tag t-spam">SPAM / PROMO</span>
+      <h3>Safely ignored</h3>
+      <p>Newsletters, cold outreach, platform noise. Filed away so it stops competing for your attention.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ====== BOUNDARIES ====== -->
+<section class="bounds"><div class="wrap">
+  <div class="section-label">Boundaries</div>
+  <h2>What it deliberately does not do.</h2>
+  <ul class="bound-list">
+    <li><b>✕</b> Never sends email automatically. Drafts only — you read, you edit, you hit send.</li>
+    <li><b>✕</b> Never negotiates contracts, disputes, or money issues. It flags them and steps back.</li>
+    <li><b>✕</b> Not an enterprise helpdesk. One person, one Gmail, one inbox. That's the whole scope.</li>
+    <li><b>✕</b> Doesn't store your emails long-term. Results are generated fresh each run.</li>
+  </ul>
+</div></section>
+
+<!-- ====== PRICING ====== -->
+<section class="price-section" id="pricing"><div class="wrap">
+  <div class="section-label">Pricing</div>
+  <h2 style="text-align:center">$12/month. That's it.</h2>
+  <p class="lead" style="text-align:center;margin:8px auto 36px">A part-time VA costs $300+/month. This costs less than two coffees.</p>
+  <div class="price-card">
+    <div class="price-badge">Most popular</div>
+    <div class="amt">$12<small>/month</small></div>
+    <ul class="price-features">
+      <li>Unlimited email triage — no per-email limits</li>
+      <li>AI reply drafts for every customer &amp; lead email</li>
+      <li>Auto-extracted task list with dates</li>
+      <li>High-risk flagging with zero auto-replies</li>
+      <li>Daily report delivered to your dashboard</li>
+      <li>Read-only Gmail access, revoke anytime</li>
+      <li>Cancel anytime — no contracts, no setup fees</li>
+    </ul>
+    <a class="price-cta" href="https://tally.so/r/Y5X6d6">Start free trial →</a>
+    <p class="price-note">First 7 days free. No credit card required to start.</p>
+  </div>
+</div></section>
+
+<!-- ====== FINAL CTA ====== -->
+<section class="final-cta"><div class="wrap">
+  <h2>Stop drowning in your inbox.</h2>
+  <p class="sub">Join solo sellers who reclaimed their mornings. Start your free trial today — takes 2 minutes.</p>
+  <div class="cta-row" style="justify-content:center;margin-top:30px">
+    <a class="cta cta-primary" href="https://tally.so/r/Y5X6d6">Get started for free →</a>
+  </div>
+</div></section>
+
+<!-- ====== FOOTER ====== -->
+<footer><div class="wrap">
+  InboxTriage · Built for people who run their business alone.
+  <br><br>
+  <a href="https://tally.so/r/Y5X6d6">Get started</a> ·
+  <a href="#how">How it works</a> ·
+  <a href="#pricing">Pricing</a> ·
+  <a href="https://99b4fd12751a4bda9250171ec55201d6.gz5.agentos-app.net" target="_blank">How to connect Gmail</a>
+</div></footer>
+
+</body>
+</html>

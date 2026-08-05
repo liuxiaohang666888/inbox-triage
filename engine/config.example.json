@@ -1,0 +1,21 @@
+{
+  "provider": "deepseek",
+  "api_key": "PASTE_YOUR_KEY_HERE",
+
+  "_note_provider": "deepseek = 付费但极便宜(约¥0.006/封) | gemini = 免费1500次/天，换成 gemini 时把 api_key 换成 aistudio.google.com 拿的那串",
+
+  "accounts": [
+    {
+      "gmail_address": "customer1@gmail.com",
+      "app_password": "abcd efgh ijkl mnop",
+      "owner_context": "Runs a small Etsy shop selling handmade leather goods. Ships worldwide from the UK.",
+      "max_emails": 60
+    },
+    {
+      "gmail_address": "customer2@gmail.com",
+      "app_password": "wxyz 1234 5678 90ab",
+      "owner_context": "Freelance graphic designer, works with small business clients on branding.",
+      "max_emails": 40
+    }
+  ]
+}

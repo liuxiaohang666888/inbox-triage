@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+config.json
+engine/config.json
+*.db
+store.db
+engine/store.db
+engine/triage.db
+engine/out/
+showcase/

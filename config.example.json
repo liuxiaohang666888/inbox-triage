@@ -1,0 +1,6 @@
+{
+  "_comment": "这是示例。真部署时密钥走环境变量，不要写进文件。",
+  "provider": "gemini",
+  "api_key": "（不用填，部署时在主机后台设 GEMINI_API_KEY 环境变量）",
+  "accounts": []
+}

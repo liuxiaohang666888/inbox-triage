@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InboxTriage — Your inbox, sorted. Replies, drafted. Tasks, caught.</title>
+<meta name="description" content="AI triage for solo sellers and freelancers. Sorts your Gmail into Spam / Customer / Lead / High-risk, drafts replies, and pulls out every deadline hiding in your inbox. $12/mo.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#111418;--muted:#5b6672;--line:#e6e9ee;--bg:#ffffff;--soft:#f6f8fa;--acc:#1f6feb;--warn:#d9480f;--ok:#137a4d}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px}
+header{padding:22px 0;border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between}
+.logo{font-weight:700;font-size:17px;letter-spacing:-.02em}
+.logo span{color:var(--acc)}
+.nav a.cta{font-size:14px;text-decoration:none;background:var(--ink);color:#fff;padding:9px 16px;border-radius:8px;font-weight:600}
+.hero{padding:84px 0 64px;text-align:center}
+.pill{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--acc);background:#eaf1fe;padding:6px 12px;border-radius:99px;margin-bottom:22px}
+h1{font-size:clamp(32px,5.2vw,52px);line-height:1.1;letter-spacing:-.03em;font-weight:750;max-width:760px;margin:0 auto}
+.sub{margin:22px auto 0;max-width:600px;font-size:18px;color:var(--muted)}
+.form{margin:34px auto 0;display:flex;gap:10px;max-width:460px}
+.form input{flex:1;padding:14px 16px;border:1px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit}
+.form input:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:transparent}
+.form button{padding:14px 22px;border:0;border-radius:10px;background:var(--acc);color:#fff;font-size:15px;font-weight:650;cursor:pointer;font-family:inherit}
+.form button:hover{background:#1858c4}
+.micro{margin-top:12px;font-size:13px;color:var(--muted)}
+section{padding:64px 0;border-top:1px solid var(--line)}
+h2{font-size:26px;letter-spacing:-.02em;margin-bottom:8px}
+.lead{color:var(--muted);margin-bottom:34px;max-width:620px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
+.card{border:1px solid var(--line);border-radius:12px;padding:22px;background:var(--soft)}
+.card h3{font-size:16px;margin-bottom:8px}
+.card p{font-size:14.5px;color:var(--muted)}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;margin-bottom:10px;letter-spacing:.03em}
+.t-spam{background:#eceff3;color:#5b6672}.t-cust{background:#e6f4ec;color:var(--ok)}.t-lead{background:#eaf1fe;color:var(--acc)}.t-risk{background:#fdeee6;color:var(--warn)}
+.demo{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.demo-row{display:flex;gap:14px;padding:15px 18px;border-bottom:1px solid var(--line);align-items:flex-start}
+.demo-row:last-child{border-bottom:0}
+.demo-row .body{flex:1}
+.demo-row .sbj{font-size:14.5px;font-weight:600}
+.demo-row .snip{font-size:13.5px;color:var(--muted);margin-top:3px}
+.chip{font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;white-space:nowrap;margin-top:2px}
+.todo{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-top:20px}
+.todo li{list-style:none;font-size:14.5px;padding:7px 0;border-bottom:1px dashed var(--line)}
+.todo li:last-child{border:0}
+.todo b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#fff;border:1px solid var(--line);padding:2px 7px;border-radius:5px;margin-right:8px}
+.no li{list-style:none;font-size:15px;padding:9px 0;color:var(--muted)}
+.no li b{color:var(--ink)}
+.price{text-align:center;border:1px solid var(--ink);border-radius:16px;padding:38px 24px;max-width:420px;margin:0 auto}
+.price .amt{font-size:46px;font-weight:750;letter-spacing:-.03em}
+.price .amt small{font-size:16px;font-weight:500;color:var(--muted)}
+.price ul{text-align:left;margin:22px 0;padding:0}
+.price li{list-style:none;font-size:14.5px;padding:6px 0}
+.price li::before{content:"✓";color:var(--ok);font-weight:800;margin-right:9px}
+footer{padding:38px 0;border-top:1px solid var(--line);font-size:13px;color:var(--muted);text-align:center}
+@media(max-width:560px){.form{flex-direction:column}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+  <div class="logo">Inbox<span>Triage</span></div>
+  <a class="cta" href="#join">Get early access</a>
+</div></header>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="pill">For solo sellers &amp; freelancers</div>
+    <h1>Your inbox, sorted. Your replies, drafted. Your deadlines, caught.</h1>
+    <p class="sub">30 emails a day, no assistant. InboxTriage reads your Gmail, sorts every message, writes reply drafts you can send in one edit, and pulls out every task buried in the text.</p>
+    <div class="form" id="join">
+      <input type="email" placeholder="you@yourshop.com" id="em">
+      <button onclick="var e=document.getElementById('em').value;if(e){window.open('https://tally.so/r/Y5X6d6?email='+encodeURIComponent(e),'_blank')}else{window.open('https://tally.so/r/Y5X6d6','_blank')}" type="button">Get early access — Free</button>
+    </div>
+    <p class="micro">Read-only access. We never send email on your behalf. Cancel anytime.</p>
+  </div>
+</div>
+
+<section><div class="wrap">
+  <h2>Four buckets. One glance.</h2>
+  <p class="lead">Every incoming email gets one label. You open the two that matter and ignore the rest.</p>
+  <div class="grid">
+    <div class="card"><span class="tag t-spam">SPAM / PROMO</span><h3>Never opened again</h3><p>Newsletters, cold outreach, platform noise. Filed away so it stops competing for your attention.</p></div>
+    <div class="card"><span class="tag t-cust">CUSTOMER</span><h3>Someone is waiting</h3><p>Order questions, shipping, sizing, returns. Each one comes with a reply draft attached.</p></div>
+    <div class="card"><span class="tag t-lead">LEAD</span><h3>Money on the table</h3><p>Wholesale requests, collabs, custom quotes. Surfaced first so you answer while they're warm.</p></div>
+    <div class="card"><span class="tag t-risk">HIGH RISK</span><h3>Read this yourself</h3><p>Chargebacks, disputes, legal or contract language. Flagged, never auto-answered. Your call, always.</p></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>A Tuesday morning, triaged</h2>
+  <p class="lead">This is what 30 emails look like after InboxTriage runs.</p>
+  <div class="demo">
+    <div class="demo-row"><span class="chip t-cust">CUSTOMER</span><div class="body"><div class="sbj">Re: Order #4821 — wrong size?</div><div class="snip">Draft ready: apology + exchange instructions + prepaid label offer.</div></div></div>
+    <div class="demo-row"><span class="chip t-lead">LEAD</span><div class="body"><div class="sbj">Wholesale inquiry — 200 units</div><div class="snip">Draft ready: MOQ, tiered pricing, lead time. Answer within the hour.</div></div></div>
+    <div class="demo-row"><span class="chip t-risk">HIGH RISK</span><div class="body"><div class="sbj">PayPal dispute opened on transaction 9F2…</div><div class="snip">No draft generated. Handle personally — money and account risk.</div></div></div>
+    <div class="demo-row"><span class="chip t-spam">SPAM</span><div class="body"><div class="sbj">🔥 Boost your Etsy sales 10x with this…</div><div class="snip">Filed. You'll never see it in your working view.</div></div></div>
+  </div>
+  <div class="todo">
+    <div style="font-weight:650;margin-bottom:8px">Tasks pulled out of those emails</div>
+    <ul>
+      <li><b>Tue Aug 4</b> Ship replacement for order #4821</li>
+      <li><b>Wed Aug 5</b> Send wholesale quote — 200 units</li>
+      <li><b>Fri Aug 7</b> Upload tracking before dispute deadline</li>
+    </ul>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>What it deliberately does not do</h2>
+  <p class="lead">Boundaries are the feature.</p>
+  <ul class="no">
+    <li><b>Never sends email automatically.</b> Drafts only. You read, you edit, you hit send.</li>
+    <li><b>Never negotiates contracts or money disputes.</b> It flags them and steps back.</li>
+    <li><b>Not an enterprise helpdesk.</b> One person, one Gmail, one inbox. That's the whole scope.</li>
+  </ul>
+</div></section>
+
+<section><div class="wrap">
+  <h2 style="text-align:center">Cheaper than an hour of your time</h2>
+  <p class="lead" style="margin:8px auto 30px;text-align:center">A part-time VA runs $300+/month. This runs while you sleep.</p>
+  <div class="price">
+    <div class="amt">$12<small>/month</small></div>
+    <ul>
+      <li>Unlimited email triage</li>
+      <li>AI reply drafts, human-approved</li>
+      <li>Auto-extracted task list with dates</li>
+      <li>High-risk flagging</li>
+      <li>Read-only access, revoke anytime</li>
+    </ul>
+    <div class="form" style="max-width:none;margin:24px auto 0">
+      <input type="email" placeholder="Email for early access" id="em2">
+      <button onclick="window.open('https://tally.so/r/Y5X6d6','_blank')" type="button">Join the waitlist</button>
+    </div>
+    <p class="micro">First 20 users: $12/mo locked for life.</p>
+  </div>
+</div></section>
+
+<footer><div class="wrap">InboxTriage · Built for people who run their business alone.</div></footer>
+</body>
+</html>
