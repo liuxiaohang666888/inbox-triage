@@ -16,15 +16,16 @@ InboxTriage —— 完整网页应用（可公网部署版）
 import os
 import sys
 import time
-from collections import defaultdict
+import hashlib
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "engine"))
-import mailbox, ai, report
+import mailbox, ai, report, usage
 
-from flask import Flask, request
+from flask import Flask, request, redirect, url_for, session
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "inboxtriage-secret")
 
 # ---------------- 密钥从环境变量读（绝不放进代码/仓库）----------------
 PROVIDER = os.environ.get("PROVIDER", "zhipu").lower()
@@ -37,19 +38,38 @@ else:
 
 GUIDE_LINK = "https://99b4fd12751a4bda9250171ec55201d6.gz5.agentos-app.net"
 PAYMENT_URL = os.environ.get("PAYMENT_URL", "")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "inboxadmin")
 
-# ---------------- 极简单 IP 限额（公网无登录墙，防滥用烧额度）--------
-_HITS = defaultdict(list)
-DAILY_CAP = 10  # 每个 IP 每天最多跑 10 次
+# ---------------- 试用/订阅网关（按 Gmail 身份，非 IP）--------
+def _gate_html(title, msg, sub_text=None):
+    return (f"<div style='font-family:sans-serif;max-width:560px;margin:60px auto;padding:28px;"
+            f"border:1px solid #e6e9ee;border-radius:12px;text-align:center'>"
+            f"<h2 style='font-size:20px'>{title}</h2>"
+            f"<p style='color:#5b6672;margin:14px 0;line-height:1.6'>{msg}</p>"
+            + (f"<a href='/activate' style='display:inline-block;background:#1f6feb;color:#fff;"
+               f"padding:11px 22px;border-radius:10px;font-weight:700;text-decoration:none'>"
+               f"{sub_text or 'Activate subscription'}</a>" if sub_text else "")
+            + f"<br><a href='/' style='display:inline-block;margin-top:16px;color:#1f6feb'>← Back</a></div>")
 
 
-def _allowed(ip: str) -> bool:
-    now = time.time()
-    _HITS[ip] = [t for t in _HITS[ip] if now - t < 86400]
-    if len(_HITS[ip]) >= DAILY_CAP:
-        return False
-    _HITS[ip].append(now)
-    return True
+def access_check(gmail: str):
+    """返回 (ok:bool, block_html_or_None)。按 Gmail 哈希做试用/每日上限控制。"""
+    h = usage.hash_gmail(gmail)
+    st = usage.user_state(h)
+    if st["status"] == "expired":
+        return False, _gate_html(
+            "Your 7-day free trial has ended",
+            "InboxTriage is $12/month. Subscribe and activate with your Gmail to keep using it.",
+            "Subscribe &amp; activate — $12/mo")
+    if st["remaining"] <= 0:
+        if st["subscribed"]:
+            return False, _gate_html("Daily limit reached",
+                                     "You've used your 200 runs for today. Come back tomorrow.")
+        return False, _gate_html("Daily free limit reached",
+                                 f"You've used your {st['cap']} free runs today. Subscribe for unlimited daily scans, "
+                                 "or come back tomorrow.",
+                                 "Subscribe — $12/mo")
+    return True, None
 
 
 # ---------------------------------------------------------------- 引擎封装
@@ -77,7 +97,7 @@ if PAYPAL_PLAN_ID:
         '<script>paypal.Buttons({style:{shape:"rect",color:"gold",layout:"vertical",label:"subscribe"},'
         'createSubscription:function(data,actions){return actions.subscription.create({plan_id:"'
         + PAYPAL_PLAN_ID
-        + '"})},onApprove:function(data,actions){alert("Thanks! Your subscription ID: "+data.subscriptionID)}})'
+        + '"})},onApprove:function(data,actions){window.location.href="/activate?sub="+data.subscriptionID}})'
         '.render("#paypal-sub");</script>'
     )
 elif PAYMENT_URL:
@@ -146,7 +166,9 @@ font-weight:700;font-size:14px;text-decoration:none}
     name it anything, copy the 16-char code. Revoke it anytime to cut access.<br>
     Not sure how? <a href="__GUIDE_LINK__" target="_blank" style="color:#79c0ff">See the 4-step setup guide &rarr;</a>
   </div>
-  <div class="sub-bar">__PAYMENT__</div>
+  <div class="sub-bar">__PAYMENT__
+    <div style="margin-top:12px;font-size:12.5px"><a href="/activate" style="color:#8b949e">Already subscribed? Activate your account &rarr;</a></div>
+  </div>
 </div></body></html>"""
 INDEX = INDEX.replace("__GUIDE_LINK__", GUIDE_LINK).replace("__PAYMENT__", PAYMENT_BLOCK)
 
@@ -165,15 +187,6 @@ def run():
                 "<h2>Service is being configured.</h2>"
                 "<p style='color:#5b6672'>The AI key isn't set yet. Please check back shortly.</p>"
                 "<a href='/'>← Back</a></div>")
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "0.0.0.0").split(",")[0].strip()
-    if not _allowed(ip):
-        return ("<div style='font-family:sans-serif;max-width:560px;margin:60px auto;padding:24px;"
-                "border:1px solid #e6e9ee;border-radius:12px'>"
-                "<h2>Daily limit reached</h2>"
-                "<p style='color:#5b6672'>You've used your 10 free runs for today. Come back tomorrow, "
-                "or subscribe for unlimited daily scans.</p>"
-                "<a href='/'>← Back</a></div>")
-
     gmail = (request.form.get("gmail") or "").strip()
     pwd = (request.form.get("pwd") or "").strip()
     ctx = (request.form.get("ctx") or "").strip()
@@ -184,6 +197,11 @@ def run():
 
     if not gmail or not pwd:
         return "<h2>Missing Gmail or app password.</h2><a href='/'>Back</a>"
+
+    # 试用/订阅网关：先拦再用，避免白烧 AI 额度
+    ok, block = access_check(gmail)
+    if not ok:
+        return block
 
     try:
         results = run_triage(gmail, pwd, days, ctx)
@@ -207,6 +225,7 @@ def run():
                 f"<p style='color:#5b6672'>Try a larger 'days' value, or send yourself a test email first.</p>"
                 f"<a href='/'>← Back</a></div>")
 
+    usage.record_run(usage.hash_gmail(gmail), len(results))
     return report.build(results, gmail)
 
 
@@ -283,6 +302,111 @@ def demo():
         },
     ]
     return report.build(SAMPLE, "demo@inboxtriage.app")
+
+
+# ---------------------------------------------------------------- 激活订阅（付款后解锁）
+@app.route("/activate", methods=["GET", "POST"])
+def activate():
+    if request.method == "POST":
+        gmail = (request.form.get("gmail") or "").strip().lower()
+        sub_id = (request.form.get("sub_id") or "").strip()
+        if not gmail or "@" not in gmail:
+            return ("<div style='font-family:sans-serif;max-width:480px;margin:60px auto;padding:24px;"
+                    "border:1px solid #e6e9ee;border-radius:12px'>"
+                    "<h2>Enter the Gmail you used for InboxTriage</h2>"
+                    "<p style='color:#d9480f'>That doesn't look like a valid email.</p>"
+                    "<a href='/activate'>← Back</a></div>")
+        usage.mark_subscribed(usage.hash_gmail(gmail), sub_id)
+        return (f"<div style='font-family:sans-serif;max-width:480px;margin:60px auto;padding:28px;"
+                f"border:1px solid #137a4d;border-radius:12px;text-align:center'>"
+                f"<h2 style='color:#137a4d'>✅ Activated</h2>"
+                f"<p style='color:#5b6672;margin:14px 0'>Thanks! <b>{gmail}</b> is now on the $12/month plan "
+                f"with unlimited daily scans. Go run your inbox.</p>"
+                f"<a href='/' style='display:inline-block;background:#1f6feb;color:#fff;padding:11px 22px;"
+                f"border-radius:10px;font-weight:700;text-decoration:none'>Open InboxTriage →</a></div>")
+    sub = request.args.get("sub", "")
+    sub_note = (f"<p style='color:#137a4d;font-size:13px;margin-bottom:14px'>"
+                f"Payment received (sub ID: <code>{sub}</code>). Enter your Gmail below to unlock.</p>"
+                ) if sub else ""
+    return (f"<div style='font-family:sans-serif;max-width:480px;margin:60px auto;padding:28px;"
+            f"border:1px solid #e6e9ee;border-radius:12px'>"
+            f"<h2>Activate your subscription</h2>"
+            f"{sub_note}"
+            f"<p style='color:#5b6672;font-size:14px;margin:10px 0 18px'>Enter the Gmail address you use with "
+            f"InboxTriage. We don't store your email in plain text — just a hash to link your plan.</p>"
+            f"<form method='POST' action='/activate'>"
+            f"<input type='hidden' name='sub_id' value='{sub}'>"
+            f"<input type='email' name='gmail' placeholder='you@gmail.com' required "
+            f"style='width:100%;padding:12px 14px;border:1px solid #cdd3da;border-radius:9px;"
+            f"font-size:14.5px;margin-bottom:14px'>"
+            f"<button type='submit' style='width:100%;padding:12px;border:0;border-radius:10px;"
+            f"background:#137a4d;color:#fff;font-weight:700;font-size:15px;cursor:pointer'>Activate</button>"
+            f"</form><a href='/' style='display:inline-block;margin-top:16px;color:#1f6feb'>← Back</a></div>")
+
+
+# ---------------------------------------------------------------- 后台统计（需密码）
+ADMIN_PAGE = """<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>InboxTriage Admin</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#0e1116;
+color:#e6edf3;padding:28px 16px}.wrap{max-width:880px;margin:0 auto}h1{font-size:22px;margin-bottom:4px}
+.sub{color:#8b949e;font-size:13px;margin-bottom:20px}.cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.c{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px 20px;flex:1;min-width:140px}
+.c b{display:block;font-size:26px}.c span{font-size:11.5px;color:#8b949e;text-transform:uppercase;letter-spacing:.04em}
+table{width:100%;border-collapse:collapse;background:#161b22;border:1px solid #30363d;border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:11px 14px;font-size:13px;border-bottom:1px solid #21262d}
+th{color:#8b949e;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.code{font-family:ui-monospace,Menlo,monospace;color:#79c0ff}
+.warn{background:#fdeee6;border:1px solid #f0c9b8;color:#9a3412;padding:10px 14px;border-radius:9px;
+font-size:12.5px;margin-bottom:18px}a{color:#79c0ff}.logout{float:right;font-size:13px}</style></head>
+<body><div class="wrap"><a class="logout" href="/admin?logout=1">Log out</a>
+<h1>InboxTriage — usage</h1>
+<div class="sub">Auto-refreshes every 60s · data resets on redeploy (ephemeral disk)</div>
+__WARN__
+<div class="cards">
+<div class="c"><b>__TOTAL__</b><span>Total runs</span></div>
+<div class="c"><b>__USERS__</b><span>Unique users (by Gmail)</span></div>
+<div class="c"><b>__SUB__</b><span>Subscribed</span></div>
+<div class="c"><b>__TRIAL__</b><span>In trial (7d free)</span></div>
+<div class="c"><b>__EXP__</b><span>Trial expired, not paid</span></div>
+<div class="c"><b>__TODAY__</b><span>Runs today</span></div>
+</div>
+<table><tr><th>User (hash)</th><th>Time (UTC)</th><th>Emails</th></tr>__ROWS__</table>
+</div><script>setTimeout(function(){location.reload()},60000)</script></body></html>"""
+
+
+@app.route("/admin", methods=["GET", "POST"])
+def admin():
+    if request.args.get("logout"):
+        session.pop("admin", None)
+        return redirect("/admin")
+    if request.method == "POST":
+        pw = request.form.get("pw", "")
+        if pw == ADMIN_PASSWORD:
+            session["admin"] = True
+            return redirect("/admin")
+        return ("<div style='font-family:sans-serif;max-width:380px;margin:80px auto;padding:24px;"
+                "border:1px solid #e6e9ee;border-radius:12px;text-align:center'>"
+                "<h2>Wrong password</h2><a href='/admin'>← Try again</a></div>")
+    if not session.get("admin"):
+        return ("<div style='font-family:sans-serif;max-width:380px;margin:80px auto;padding:28px;"
+                "border:1px solid #e6e9ee;border-radius:12px'>"
+                "<h2>InboxTriage Admin</h2><p style='color:#5b6672;font-size:14px;margin:12px 0'>Enter admin password.</p>"
+                "<form method='POST' action='/admin'>"
+                "<input type='password' name='pw' placeholder='password' required "
+                "style='width:100%;padding:11px 13px;border:1px solid #cdd3da;border-radius:9px;margin-bottom:12px'>"
+                "<button type='submit' style='width:100%;padding:11px;border:0;border-radius:10px;background:#1f6feb;"
+                "color:#fff;font-weight:700;cursor:pointer'>Login</button></form></div>")
+    s = usage.stats()
+    warn = ('<div class="warn"><b>Security:</b> default admin password is set. Change <code>ADMIN_PASSWORD</code> '
+            'in Render env before sharing this URL.</div>') if ADMIN_PASSWORD == "inboxadmin" else ""
+    rows = "".join(
+        f"<tr><td class='code'>{r['hash']}</td><td>{datetime.utcfromtimestamp(r['ts']).strftime('%Y-%m-%d %H:%M')}</td>"
+        f"<td>{r['emails']}</td></tr>" for r in s["recent"]) or "<tr><td colspan=3>no runs yet</td></tr>"
+    page = (ADMIN_PAGE.replace("__WARN__", warn).replace("__TOTAL__", str(s["total_runs"]))
+            .replace("__USERS__", str(s["unique_users"])).replace("__SUB__", str(s["subscribed"]))
+            .replace("__TRIAL__", str(s["trial_active"])).replace("__EXP__", str(s["expired"]))
+            .replace("__TODAY__", str(s["runs_today"])).replace("__ROWS__", rows))
+    return page
 
 
 if __name__ == "__main__":
