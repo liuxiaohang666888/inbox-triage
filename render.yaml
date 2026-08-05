@@ -8,8 +8,12 @@ services:
     startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: PROVIDER
-        value: gemini
+        value: zhipu
+      - key: ZHIPU_API_KEY
+        sync: false
       - key: GEMINI_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
         sync: false
       - key: PAYMENT_URL
         sync: false
